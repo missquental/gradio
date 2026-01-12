@@ -10,5 +10,5 @@ speechrecognition
 pyttsx3
 googletrans
 pydub
-ffmpeg
+ffmpeg-python
 
