@@ -1,84 +1,88 @@
 import streamlit as st
-from PIL import Image, ImageDraw, ImageFont
-import textwrap
+import yt_dlp
+import tempfile
+import os
 
-# --------------------------------------------------
-# Contoh fungsi generate_image
-# Ganti isi fungsi ini dengan model AI kamu
-# --------------------------------------------------
-def generate_image(prompt: str):
-    img = Image.new("RGB", (512, 512), color="white")
-    draw = ImageDraw.Draw(img)
-    
-    # Membungkus teks agar tidak keluar dari gambar
-    wrapped_text = textwrap.fill(prompt, width=30)
-    
-    # Mencoba menggunakan font default atau fallback ke font sederhana
+# Konfigurasi halaman
+st.set_page_config(
+    page_title="Facebook Reels Downloader",
+    page_icon="🎥",
+    layout="centered"
+)
+
+# Judul aplikasi
+st.title("📥 Facebook Reels Downloader")
+st.markdown("Unduh video Facebook Reels dengan mudah!")
+
+# Input URL
+url = st.text_input("🔗 Masukkan URL Facebook Reels:", 
+                   placeholder="https://www.facebook.com/reel/...")
+
+# Tombol download
+if st.button("⬇️ Download Video", type="primary") and url:
     try:
-        # Di beberapa sistem mungkin tidak ada font default
-        draw.text((20, 20), wrapped_text, fill="black")
-    except:
-        # Fallback jika font tidak tersedia
-        draw.text((20, 20), wrapped_text, fill="black")
-    
-    return img
+        with st.spinner("🔄 Memproses video..."):
+            # Konfigurasi yt-dlp
+            ydl_opts = {
+                'format': 'best',
+                'quiet': True,
+                'no_warnings': True,
+            }
+            
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                # Dapatkan info video
+                info = ydl.extract_info(url, download=False)
+                title = info.get('title', 'video')
+                
+                # Buat file temporary
+                temp_dir = tempfile.mkdtemp()
+                temp_filename = os.path.join(temp_dir, f"{title}.mp4")
+                
+                # Update konfigurasi untuk download ke file temporary
+                ydl_opts.update({
+                    'outtmpl': temp_filename,
+                })
+                
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl_download:
+                    ydl_download.download([url])
+                
+                # Baca file yang sudah didownload
+                with open(temp_filename, 'rb') as file:
+                    video_data = file.read()
+                
+                # Tombol download
+                st.success("✅ Video berhasil diproses!")
+                st.video(temp_filename)
+                
+                st.download_button(
+                    label="💾 Download Video",
+                    data=video_data,
+                    file_name=f"{title}.mp4",
+                    mime="video/mp4"
+                )
+                
+                # Bersihkan file temporary
+                os.remove(temp_filename)
+                os.rmdir(temp_dir)
+                
+    except Exception as e:
+        st.error(f"❌ Error: {str(e)}")
+        st.info("💡 Pastikan URL benar dan video dapat diakses publik")
 
-# --------------------------------------------------
-# Streamlit App
-# --------------------------------------------------
-st.set_page_config(page_title="🎨 Your Fancy Image Generator", layout="wide")
-
-# Header dengan markdown
-st.markdown("# 🎨 Your Fancy Image Generator")
+# Informasi penggunaan
 st.markdown("---")
+st.markdown("### ℹ️ Cara Penggunaan:")
+st.markdown("""
+1. Copy URL Facebook Reels dari aplikasi/web Facebook
+2. Paste URL di kolom input di atas
+3. Klik tombol "Download Video"
+4. Tunggu proses selesai
+5. Klik tombol "Download" untuk menyimpan video
+""")
 
-# Membuat layout dengan kolom
-col1, col2 = st.columns([1, 1])
-
-with col1:
-    st.markdown("### 📝 Prompt Input")
-    prompt = st.text_area(
-        "Masukkan deskripsi gambar:",
-        placeholder="Contoh: A beautiful sunset over mountains...",
-        height=100,
-        key="prompt_input"
-    )
-    
-    generate_btn = st.button(
-        "✨ Generate Image",
-        type="primary",
-        use_container_width=True
-    )
-    
-    # Info box
-    st.info("💡 Masukkan deskripsi gambar yang ingin Anda hasilkan, lalu klik tombol 'Generate Image'")
-
-with col2:
-    st.markdown("### 🖼️ Hasil Gambar")
-    
-    # Placeholder untuk gambar
-    image_placeholder = st.empty()
-    
-    # Jika tombol diklik dan prompt tidak kosong
-    if generate_btn:
-        if prompt.strip():
-            with st.spinner("🎨 Sedang membuat gambar..."):
-                try:
-                    generated_image = generate_image(prompt)
-                    image_placeholder.image(generated_image, caption=f"Gambar untuk: {prompt}", use_column_width=True)
-                except Exception as e:
-                    st.error(f"❌ Terjadi kesalahan: {str(e)}")
-        else:
-            st.warning("⚠️ Silakan masukkan deskripsi gambar terlebih dahulu!")
-    
-    # Jika belum ada gambar yang di-generate
-    if not generate_btn or not prompt.strip():
-        # Menampilkan placeholder image
-        placeholder_img = Image.new("RGB", (512, 512), color="#f0f2f6")
-        draw = ImageDraw.Draw(placeholder_img)
-        draw.text((200, 250), "🖼️ Hasil Gambar", fill="gray")
-        image_placeholder.image(placeholder_img, caption="Belum ada gambar", use_column_width=True)
-
-# Footer
-st.markdown("---")
-st.markdown("💻 Dibuat dengan Streamlit | Ganti fungsi `generate_image` dengan model AI Anda sendiri")
+st.markdown("### ⚠️ Peringatan:")
+st.warning("""
+- Gunakan tools ini sesuai hak cipta dan kebijakan Facebook
+- Beberapa video mungkin tidak bisa diunduh karena pembatasan akses
+- Video hanya akan diproses secara lokal dan tidak disimpan di server
+""")
