@@ -2,6 +2,7 @@ import streamlit as st
 import yt_dlp
 import tempfile
 import os
+import re
 
 # Konfigurasi halaman
 st.set_page_config(
@@ -13,6 +14,17 @@ st.set_page_config(
 # Judul aplikasi
 st.title("📥 Facebook Reels Downloader")
 st.markdown("Unduh video Facebook Reels dengan mudah!")
+
+# Fungsi untuk sanitasi nama file
+def sanitize_filename(filename):
+    # Hapus karakter ilegal
+    filename = re.sub(r'[^\w\-_\. ]', '', filename)
+    # Batasi panjang nama file (200 karakter untuk aman)
+    if len(filename) > 200:
+        filename = filename[:200]
+    # Ganti spasi dengan underscore
+    filename = filename.replace(' ', '_')
+    return filename or "video"  # default nama jika kosong
 
 # Input URL
 url = st.text_input("🔗 Masukkan URL Facebook Reels:", 
@@ -34,9 +46,12 @@ if st.button("⬇️ Download Video", type="primary") and url:
                 info = ydl.extract_info(url, download=False)
                 title = info.get('title', 'video')
                 
-                # Buat file temporary
+                # Sanitasi nama file
+                safe_title = sanitize_filename(title)
+                
+                # Buat file temporary dengan nama aman
                 temp_dir = tempfile.mkdtemp()
-                temp_filename = os.path.join(temp_dir, f"{title}.mp4")
+                temp_filename = os.path.join(temp_dir, f"{safe_title}.mp4")
                 
                 # Update konfigurasi untuk download ke file temporary
                 ydl_opts.update({
@@ -57,13 +72,16 @@ if st.button("⬇️ Download Video", type="primary") and url:
                 st.download_button(
                     label="💾 Download Video",
                     data=video_data,
-                    file_name=f"{title}.mp4",
+                    file_name=f"{safe_title}.mp4",
                     mime="video/mp4"
                 )
                 
                 # Bersihkan file temporary
-                os.remove(temp_filename)
-                os.rmdir(temp_dir)
+                try:
+                    os.remove(temp_filename)
+                    os.rmdir(temp_dir)
+                except:
+                    pass
                 
     except Exception as e:
         st.error(f"❌ Error: {str(e)}")
