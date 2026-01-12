@@ -202,7 +202,7 @@ https://www.facebook.com/user/videos/1122334455667788/""")
             st.info(f"📊 Total URLs: {len(urls)}")
             
             # Slider untuk memilih jumlah download
-            max_downloads = st.slider("🔢 Jumlah maksimal download:", 1, min(len(urls), 50), min(len(urls), 10))
+            max_downloads = st.slider("🔢 Jumlah maksimal download:", 1, min(len(urls), 500), min(len(urls), 10))
             
             if st.button("🚀 Mulai Download Bulk", type="primary"):
                 progress_bar = st.progress(0)
