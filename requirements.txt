@@ -6,3 +6,8 @@ ffmpeg-python
 google-cloud-speech
 google-cloud-translate
 google-cloud-texttospeech
+speechrecognition
+pyttsx3
+googletrans
+pydub
+
